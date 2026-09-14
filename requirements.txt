@@ -2,6 +2,7 @@ streamlit
 numpy
 torch
 xgboost
+scikit-learn
 transformers
 langdetect
 sentencepiece
