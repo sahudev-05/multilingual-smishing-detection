@@ -11,59 +11,12 @@ from langdetect import detect
 
 
 
-# -----------------------------
-# Load XLM-RoBERTa
-# -----------------------------
-tokenizer = AutoTokenizer.from_pretrained("xlm-roberta-base")
-bert_model = AutoModel.from_pretrained("xlm-roberta-base")
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-bert_model.to(device)
-bert_model.eval()
-
-# -----------------------------
-# Load XGBoost Model
-# -----------------------------
-xgb_model = xgb.XGBClassifier()
-xgb_model.load_model("models/xgboost_multilingual.json")
-
-# -----------------------------
-# Test Message
-# -----------------------------
-message = "ನಿಮ್ಮ ಖಾತೆಯನ್ನು ಅಮಾನತುಗೊಳಿಸಲಾಗಿದೆ, ದಯವಿಟ್ಟು ಕೆಳಗಿನ ಲಿಂಕ್ ಬಳಸಿ ಪುನಃ ಸಕ್ರಿಯಗೊಳಿಸಿ www.scam.com"
-
-# -----------------------------
-# Generate Embedding
-# -----------------------------
-encoded = tokenizer(
-    message,
-    return_tensors="pt",
-    truncation=True,
-    padding=True,
-    max_length=128
-)
-
-encoded = {k: v.to(device) for k, v in encoded.items()}
-
-with torch.no_grad():
-    outputs = bert_model(**encoded)
-
-embedding = outputs.last_hidden_state[:, 0, :].cpu().numpy()
-
-# -----------------------------
-# Predict
-# -----------------------------
-prediction = xgb_model.predict(embedding)[0]
-probability = xgb_model.predict_proba(embedding)[0]
-
-
-
 # ==========================================================
 # PAGE CONFIG
 # ==========================================================
 
 st.set_page_config(
-    page_title="📱 Multilingual Smishing Detection",
+    page_title="Multilingual Smishing Detection",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -147,7 +100,6 @@ with st.spinner("Loading AI Models..."):
 # ==========================================================
 
 def get_embedding(text):
-
     encoded = tokenizer(
         text,
         return_tensors="pt",
@@ -161,14 +113,12 @@ def get_embedding(text):
         for k, v in encoded.items()
     }
 
-    with torch.no_grad():
+    with torch.inference_mode():
         outputs = bert_model(**encoded)
 
-    embedding = outputs.last_hidden_state[:,0,:]
+    embedding = outputs.last_hidden_state[:, 0, :]
 
     return embedding.cpu().numpy()
-
-
 # ==========================================================
 # LANGUAGE
 # ==========================================================
